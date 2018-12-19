@@ -15,11 +15,16 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 extern crate ethereum_types;
+extern crate heapsize;
+extern crate serde;
+#[macro_use]
+extern crate serde_derive;
 
 mod hash;
 
 pub use crate::hash::{H128, H160, H256, H264, H512, H520};
 pub use ethereum_types::U256;
+use heapsize::HeapSizeOf;
 
 pub fn u256_from_u128(u: u128) -> U256 {
     let mut arr: [u64; 4] = [0, 0, 0, 0];
@@ -37,7 +42,52 @@ pub fn remove_0x_prefix(s: &str) -> &str {
     }
 }
 
-pub type Bytes = Vec<u8>;
+#[derive(Clone, Debug, Default, Eq, PartialEq, Deserialize, Serialize)]
+pub struct Bytes(Vec<u8>);
+
+impl ::std::ops::Deref for Bytes {
+    type Target = Vec<u8>;
+
+    fn deref(&self) -> &Vec<u8> {
+        &self.0
+    }
+}
+
+impl From<Bytes> for Vec<u8> {
+    fn from(bytes: Bytes) -> Self {
+        bytes.0
+    }
+}
+
+impl From<Vec<u8>> for Bytes {
+    fn from(bytes: Vec<u8>) -> Self {
+        Bytes(bytes)
+    }
+}
+
+impl<'a> From<&'a [u8]> for Bytes {
+    fn from(bytes: &'a [u8]) -> Self {
+        Bytes(bytes.into())
+    }
+}
+
+impl From<Box<[u8]>> for Bytes {
+    fn from(bytes: Box<[u8]>) -> Self {
+        Bytes(bytes.into())
+    }
+}
+
+impl HeapSizeOf for Bytes {
+    fn heap_size_of_children(&self) -> usize {
+        self.0.heap_size_of_children()
+    }
+}
+
+impl AsRef<[u8]> for Bytes {
+    fn as_ref(&self) -> &[u8] {
+        self.0.as_ref()
+    }
+}
 
 #[cfg(test)]
 mod tests {
